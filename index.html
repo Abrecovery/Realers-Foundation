@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaBank — Digital Banking</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen">
+      <div class="auth-card">
+        <div class="logo">
+          <div class="logo-icon">N</div>
+          <h1>NovaBank</h1>
+        </div>
+        <p class="tagline">Modern digital banking, simplified.</p>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="login">Login</button>
+          <button class="tab" data-tab="register">Register</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="you@example.com" required />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" required />
+          </div>
+          <button type="submit" class="btn primary full">Sign In</button>
+        </form>
+
+        <form id="register-form" class="auth-form hidden">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="reg-name" placeholder="Jane Doe" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="reg-email" placeholder="you@example.com" required />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="reg-password" placeholder="Min 6 characters" required minlength="6" />
+          </div>
+          <button type="submit" class="btn primary full">Create Account</button>
+        </form>
+
+        <div class="demo-hint">
+          <strong>Demo accounts:</strong><br>
+          alice@demo.com / password123<br>
+          bob@demo.com / password123
+        </div>
+        <p id="auth-error" class="error"></p>
+      </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboard-screen" class="screen hidden">
+      <header class="topbar">
+        <div class="logo small">
+          <div class="logo-icon">N</div>
+          <span>NovaBank</span>
+        </div>
+        <div class="user-menu">
+          <span id="user-greeting">Hello</span>
+          <button id="logout-btn" class="btn ghost">Logout</button>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <section class="balance-card">
+          <p class="label">Available Balance</p>
+          <h2 id="balance-amount">$0.00</h2>
+          <div class="actions">
+            <button id="show-transfer-btn" class="btn primary">Send Money</button>
+            <button id="show-deposit-btn" class="btn secondary">Add Funds (Demo)</button>
+          </div>
+        </section>
+
+        <!-- Transfer Modal -->
+        <div id="transfer-modal" class="modal hidden">
+          <div class="modal-content">
+            <h3>Send Money</h3>
+            <form id="transfer-form">
+              <div class="form-group">
+                <label>Recipient Email</label>
+                <input type="email" id="transfer-email" placeholder="bob@demo.com" required />
+              </div>
+              <div class="form-group">
+                <label>Amount ($)</label>
+                <input type="number" id="transfer-amount" step="0.01" min="0.01" placeholder="50.00" required />
+              </div>
+              <div class="form-group">
+                <label>Note (optional)</label>
+                <input type="text" id="transfer-note" placeholder="For dinner" />
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn ghost" id="cancel-transfer">Cancel</button>
+                <button type="submit" class="btn primary">Send</button>
+              </div>
+            </form>
+            <p id="transfer-error" class="error"></p>
+          </div>
+        </div>
+
+        <!-- Deposit Modal -->
+        <div id="deposit-modal" class="modal hidden">
+          <div class="modal-content">
+            <h3>Add Funds (Demo)</h3>
+            <p class="hint">This is a demo feature. In a real bank this would connect to your bank account or card.</p>
+            <form id="deposit-form">
+              <div class="form-group">
+                <label>Amount ($)</label>
+                <input type="number" id="deposit-amount" step="0.01" min="0.01" max="10000" placeholder="100.00" required />
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn ghost" id="cancel-deposit">Cancel</button>
+                <button type="submit" class="btn primary">Add Funds</button>
+              </div>
+            </form>
+            <p id="deposit-error" class="error"></p>
+          </div>
+        </div>
+
+        <section class="transactions">
+          <div class="section-header">
+            <h3>Recent Transactions</h3>
+            <button id="refresh-btn" class="btn ghost small">Refresh</button>
+          </div>
+          <div id="tx-list" class="tx-list">
+            <p class="empty">No transactions yet.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
