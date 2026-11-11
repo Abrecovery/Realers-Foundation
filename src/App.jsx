@@ -31,8 +31,6 @@ export default function App() {
   });
 
   // User-Specific Wallet & Savings State (keyed by phone number)
-  const userKey = user ? user.phone : 'guest';
-
   const [balance, setBalance] = useState(() => {
     if (!user) return 1000.00;
     const saved = localStorage.getItem(`reliance_balance_${user.phone}`);
@@ -58,6 +56,13 @@ export default function App() {
       { id: 'tx-1', type: 'Grant', title: 'Reliance Foundation Grant', amount: 1000.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }
     ];
   });
+
+  // Modal Inputs
+  const [transferData, setTransferData] = useState({ recipient: '', bank: 'Reliance Internal', amount: '', note: '', pin: '' });
+  const [topupData, setTopupData] = useState({ amount: '', method: 'card' });
+  const [airtimeData, setAirtimeData] = useState({ phone: '', network: 'MTN', amount: '' });
+  const [savingsData, setSavingsData] = useState({ amount: '', action: 'deposit' });
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
 
   // Reload account data when user logs in or switches
   useEffect(() => {
@@ -143,7 +148,7 @@ export default function App() {
     setBalance(1000.00); // Starter Empowerment Grant
   };
 
-  const handleLogout = () => {
+  const handleSwitchAccount = () => {
     setUser(null);
     setActiveTab('home');
     setAuthStep('login');
@@ -300,7 +305,7 @@ export default function App() {
                 </div>
               </div>
               <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition">
-                Sign In / Switch Account
+                Sign In
               </button>
               <p className="text-center text-xs text-slate-400 pt-2">
                 Don't have an account?{' '}
@@ -417,9 +422,12 @@ export default function App() {
         {/* TOP HEADER */}
         <div className="p-4 bg-slate-900/80 sticky top-0 z-20 backdrop-blur-md border-b border-slate-800/80 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-white shadow-md shadow-emerald-600/30">
+            <button 
+              onClick={() => setActiveTab('profile')} 
+              className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-white shadow-md shadow-emerald-600/30 hover:opacity-90 active:scale-95 transition"
+            >
               {user.fullName ? user.fullName[0] : 'R'}
-            </div>
+            </button>
             <div>
               <h2 className="text-sm font-bold flex items-center gap-1.5">
                 Hi, {user.fullName.split(' ')[0]}
@@ -697,10 +705,17 @@ export default function App() {
             </div>
 
             <button 
-              onClick={handleLogout}
-              className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-xs hover:bg-red-500/20"
+              onClick={handleSwitchAccount}
+              className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-xs hover:bg-emerald-500/20 transition mb-2"
             >
-              <LogOut className="w-4 h-4" /> Log Out / Switch Account
+              <RefreshCw className="w-4 h-4" /> Switch Account
+            </button>
+
+            <button 
+              onClick={handleSwitchAccount}
+              className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-xs hover:bg-red-500/20 transition"
+            >
+              <LogOut className="w-4 h-4" /> Log Out
             </button>
           </div>
         )}
