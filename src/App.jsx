@@ -16,7 +16,7 @@ const CURRENCIES = {
 export default function App() {
   // Authentication & Profile State
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('reliance_user');
+    const saved = localStorage.getItem('reliance_current_user');
     return saved ? JSON.parse(saved) : null;
   });
 
@@ -30,13 +30,19 @@ export default function App() {
     pin: ''
   });
 
-  // Wallet & Savings State
+  // User-Specific Wallet & Savings State (keyed by phone number)
+  const userKey = user ? user.phone : 'guest';
+
   const [balance, setBalance] = useState(() => {
-    return parseFloat(localStorage.getItem('reliance_balance')) || 1000.00; // $1,000 Grant Bonus
+    if (!user) return 1000.00;
+    const saved = localStorage.getItem(`reliance_balance_${user.phone}`);
+    return saved !== null ? parseFloat(saved) : 1000.00;
   });
   
   const [savingsBalance, setSavingsBalance] = useState(() => {
-    return parseFloat(localStorage.getItem('reliance_savings')) || 250.00;
+    if (!user) return 250.00;
+    const saved = localStorage.getItem(`reliance_savings_${user.phone}`);
+    return saved !== null ? parseFloat(saved) : 250.00;
   });
 
   const [currency, setCurrency] = useState('USD');
@@ -44,37 +50,51 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [activeModal, setActiveModal] = useState(null);
 
-  // Transactions State
+  // User-Specific Transactions State
   const [transactions, setTransactions] = useState(() => {
-    const saved = localStorage.getItem('reliance_txs');
+    if (!user) return [{ id: 'tx-1', type: 'Grant', title: 'Reliance Foundation Grant', amount: 1000.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }];
+    const saved = localStorage.getItem(`reliance_txs_${user.phone}`);
     return saved ? JSON.parse(saved) : [
       { id: 'tx-1', type: 'Grant', title: 'Reliance Foundation Grant', amount: 1000.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }
     ];
   });
 
-  // Modal Inputs
-  const [transferData, setTransferData] = useState({ recipient: '', bank: 'Reliance Internal', amount: '', note: '', pin: '' });
-  const [topupData, setTopupData] = useState({ amount: '', method: 'card' });
-  const [airtimeData, setAirtimeData] = useState({ phone: '', network: 'MTN', amount: '' });
-  const [savingsData, setSavingsData] = useState({ amount: '', action: 'deposit' });
-  const [selectedReceipt, setSelectedReceipt] = useState(null);
-
-  // Save changes to localStorage
+  // Reload account data when user logs in or switches
   useEffect(() => {
-    if (user) localStorage.setItem('reliance_user', JSON.stringify(user));
+    if (user) {
+      localStorage.setItem('reliance_current_user', JSON.stringify(user));
+      const savedBal = localStorage.getItem(`reliance_balance_${user.phone}`);
+      const savedSav = localStorage.getItem(`reliance_savings_${user.phone}`);
+      const savedTxs = localStorage.getItem(`reliance_txs_${user.phone}`);
+
+      setBalance(savedBal !== null ? parseFloat(savedBal) : 1000.00);
+      setSavingsBalance(savedSav !== null ? parseFloat(savedSav) : 250.00);
+      setTransactions(savedTxs ? JSON.parse(savedTxs) : [
+        { id: 'tx-1', type: 'Grant', title: 'Reliance Foundation Grant', amount: 1000.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }
+      ]);
+    } else {
+      localStorage.removeItem('reliance_current_user');
+    }
   }, [user]);
 
+  // Save changes to user-specific localStorage
   useEffect(() => {
-    localStorage.setItem('reliance_balance', balance.toString());
-  }, [balance]);
+    if (user) {
+      localStorage.setItem(`reliance_balance_${user.phone}`, balance.toString());
+    }
+  }, [balance, user]);
 
   useEffect(() => {
-    localStorage.setItem('reliance_savings', savingsBalance.toString());
-  }, [savingsBalance]);
+    if (user) {
+      localStorage.setItem(`reliance_savings_${user.phone}`, savingsBalance.toString());
+    }
+  }, [savingsBalance, user]);
 
   useEffect(() => {
-    localStorage.setItem('reliance_txs', JSON.stringify(transactions));
-  }, [transactions]);
+    if (user) {
+      localStorage.setItem(`reliance_txs_${user.phone}`, JSON.stringify(transactions));
+    }
+  }, [transactions, user]);
 
   // Currency Formatter Helper
   const formatMoney = (amountInUSD) => {
@@ -125,7 +145,8 @@ export default function App() {
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('reliance_user');
+    setActiveTab('home');
+    setAuthStep('login');
   };
 
   // Transaction Actions
@@ -259,6 +280,7 @@ export default function App() {
                   <input 
                     type="text" 
                     placeholder="e.g. +1 234 567 890" 
+                    required
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-emerald-500"
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   />
@@ -271,13 +293,14 @@ export default function App() {
                   <input 
                     type="password" 
                     placeholder="••••••••" 
+                    required
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-emerald-500"
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                   />
                 </div>
               </div>
               <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition">
-                Sign In
+                Sign In / Switch Account
               </button>
               <p className="text-center text-xs text-slate-400 pt-2">
                 Don't have an account?{' '}
@@ -677,7 +700,7 @@ export default function App() {
               onClick={handleLogout}
               className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-xs hover:bg-red-500/20"
             >
-              <LogOut className="w-4 h-4" /> Log Out
+              <LogOut className="w-4 h-4" /> Log Out / Switch Account
             </button>
           </div>
         )}
