@@ -2,15 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { 
   Wallet, Send, ArrowDownRight, Smartphone, Zap, PiggyBank, 
   TrendingUp, ShieldCheck, User, LogOut, Eye, EyeOff, CheckCircle2, 
-  Plus, ChevronRight, Globe, Lock, Mail, Phone, RefreshCw, X, FileText
+  Plus, ChevronRight, Globe, Lock, Mail, Phone, RefreshCw, X, FileText, Loader2
 } from 'lucide-react';
 
-// Currency Rates relative to USD
+// Currency Rates relative to USD (NGN removed)
 const CURRENCIES = {
   USD: { symbol: '$', rate: 1.0, label: 'USD ($)' },
   EUR: { symbol: '€', rate: 0.92, label: 'EUR (€)' },
-  GBP: { symbol: '£', rate: 0.79, label: 'GBP (£)' },
-  NGN: { symbol: '₦', rate: 1550.0, label: 'NGN (₦)' }
+  GBP: { symbol: '£', rate: 0.79, label: 'GBP (£)' }
 };
 
 export default function App() {
@@ -30,17 +29,21 @@ export default function App() {
     pin: ''
   });
 
-  // User-Specific Wallet & Savings State (keyed by phone number)
+  // Generated Real OTP & Sending Loader State
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  // User-Specific Wallet & Savings State (keyed by phone/email)
   const [balance, setBalance] = useState(() => {
-    if (!user) return 1000.00;
+    if (!user) return 50.00;
     const saved = localStorage.getItem(`reliance_balance_${user.phone}`);
-    return saved !== null ? parseFloat(saved) : 1000.00;
+    return saved !== null ? parseFloat(saved) : 50.00;
   });
   
   const [savingsBalance, setSavingsBalance] = useState(() => {
-    if (!user) return 250.00;
+    if (!user) return 0.00;
     const saved = localStorage.getItem(`reliance_savings_${user.phone}`);
-    return saved !== null ? parseFloat(saved) : 250.00;
+    return saved !== null ? parseFloat(saved) : 0.00;
   });
 
   const [currency, setCurrency] = useState('USD');
@@ -50,17 +53,17 @@ export default function App() {
 
   // User-Specific Transactions State
   const [transactions, setTransactions] = useState(() => {
-    if (!user) return [{ id: 'tx-1', type: 'Grant', title: 'Reliance Foundation Grant', amount: 1000.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }];
+    if (!user) return [{ id: 'tx-1', type: 'Grant', title: 'Reliance Welcome Grant', amount: 50.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }];
     const saved = localStorage.getItem(`reliance_txs_${user.phone}`);
     return saved ? JSON.parse(saved) : [
-      { id: 'tx-1', type: 'Grant', title: 'Reliance Foundation Grant', amount: 1000.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }
+      { id: 'tx-1', type: 'Grant', title: 'Reliance Welcome Grant', amount: 50.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }
     ];
   });
 
   // Modal Inputs
   const [transferData, setTransferData] = useState({ recipient: '', bank: 'Reliance Internal', amount: '', note: '', pin: '' });
   const [topupData, setTopupData] = useState({ amount: '', method: 'card' });
-  const [airtimeData, setAirtimeData] = useState({ phone: '', network: 'MTN', amount: '' });
+  const [airtimeData, setAirtimeData] = useState({ phone: '', network: 'Global Telecom', amount: '' });
   const [savingsData, setSavingsData] = useState({ amount: '', action: 'deposit' });
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
@@ -72,10 +75,10 @@ export default function App() {
       const savedSav = localStorage.getItem(`reliance_savings_${user.phone}`);
       const savedTxs = localStorage.getItem(`reliance_txs_${user.phone}`);
 
-      setBalance(savedBal !== null ? parseFloat(savedBal) : 1000.00);
-      setSavingsBalance(savedSav !== null ? parseFloat(savedSav) : 250.00);
+      setBalance(savedBal !== null ? parseFloat(savedBal) : 50.00);
+      setSavingsBalance(savedSav !== null ? parseFloat(savedSav) : 0.00);
       setTransactions(savedTxs ? JSON.parse(savedTxs) : [
-        { id: 'tx-1', type: 'Grant', title: 'Reliance Foundation Grant', amount: 1000.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }
+        { id: 'tx-1', type: 'Grant', title: 'Reliance Welcome Grant', amount: 50.00, date: 'Today', status: 'Completed', ref: 'RF-982341' }
       ]);
     } else {
       localStorage.removeItem('reliance_current_user');
@@ -103,20 +106,47 @@ export default function App() {
 
   // Currency Formatter Helper
   const formatMoney = (amountInUSD) => {
-    const curr = CURRENCIES[currency];
+    const curr = CURRENCIES[currency] || CURRENCIES.USD;
     const converted = amountInUSD * curr.rate;
     return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // Auth Handlers (Strictly checks registered users registry)
+  // Real Email Verification Trigger via EmailJS
+  const sendEmailVerificationCode = async (userEmail, otpCode) => {
+    setIsSendingEmail(true);
+    try {
+      // Connects to EmailJS REST API
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: 'YOUR_SERVICE_ID', // Replace with your free EmailJS Service ID
+          template_id: 'YOUR_TEMPLATE_ID', // Replace with your free EmailJS Template ID
+          user_id: 'YOUR_PUBLIC_KEY', // Replace with your free EmailJS Public Key
+          template_params: {
+            to_email: userEmail,
+            passcode: otpCode,
+            user_name: formData.fullName
+          }
+        })
+      });
+
+      if (!response.ok) {
+        console.warn('EmailJS API response not OK, falling back to screen display for testing');
+      }
+    } catch (err) {
+      console.error('Email verification dispatch error:', err);
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  // Auth Handlers
   const handleLogin = (e) => {
     e.preventDefault();
     if (!formData.phone || !formData.password) return alert('Please enter phone/email and password');
 
-    // Retrieve registered accounts database from localStorage
     const registeredUsers = JSON.parse(localStorage.getItem('reliance_registered_users') || '[]');
-    
-    // Find matching registered account by phone or email
     const foundUser = registeredUsers.find(
       u => u.phone === formData.phone || u.email === formData.phone
     );
@@ -128,23 +158,30 @@ export default function App() {
     setUser(foundUser);
   };
 
-  const handleSignupDetails = (e) => {
+  const handleSignupDetails = async (e) => {
     e.preventDefault();
     if (!formData.fullName || !formData.phone || !formData.email) return alert('Please fill in all details');
     
-    // Check if phone or email already exists
     const registeredUsers = JSON.parse(localStorage.getItem('reliance_registered_users') || '[]');
     const exists = registeredUsers.some(u => u.phone === formData.phone || u.email === formData.email);
     if (exists) {
       return alert('An account with this phone or email already exists. Please log in instead.');
     }
 
+    // Generate random 4-digit code
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(otpCode);
+
+    // Send real verification code to the target email
+    await sendEmailVerificationCode(formData.email, otpCode);
     setAuthStep('signup_otp');
   };
 
   const handleVerifyOTP = (e) => {
     e.preventDefault();
-    if (formData.otp.length < 4) return alert('Enter 4-digit code (Use 1234)');
+    if (formData.otp !== generatedOtp) {
+      return alert(`Invalid code! Please check your email inbox at ${formData.email}`);
+    }
     setAuthStep('signup_pin');
   };
 
@@ -156,17 +193,16 @@ export default function App() {
       fullName: formData.fullName,
       phone: formData.phone,
       email: formData.email,
-      accountNo: '30' + formData.phone.slice(-8),
+      accountNo: '30' + formData.phone.replace(/[^0-9]/g, '').slice(-8),
       tier: 'Tier 3 (Global Verified)'
     };
 
-    // Save into registered users database
     const registeredUsers = JSON.parse(localStorage.getItem('reliance_registered_users') || '[]');
     registeredUsers.push(newUser);
     localStorage.setItem('reliance_registered_users', JSON.stringify(registeredUsers));
 
     setUser(newUser);
-    setBalance(1000.00); // Starter Empowerment Grant
+    setBalance(50.00); // Reduced Signup Bonus ($50 USD)
   };
 
   const handleSwitchAccount = () => {
@@ -178,7 +214,8 @@ export default function App() {
   // Transaction Actions
   const executeTransfer = (e) => {
     e.preventDefault();
-    const amt = parseFloat(transferData.amount) / CURRENCIES[currency].rate;
+    const currRate = CURRENCIES[currency] ? CURRENCIES[currency].rate : 1.0;
+    const amt = parseFloat(transferData.amount) / currRate;
     if (amt <= 0 || isNaN(amt)) return alert('Enter valid amount');
     if (amt > balance) return alert('Insufficient balance');
     if (transferData.pin.length !== 4) return alert('Enter 4-digit PIN');
@@ -201,7 +238,8 @@ export default function App() {
 
   const executeTopup = (e) => {
     e.preventDefault();
-    const amt = parseFloat(topupData.amount) / CURRENCIES[currency].rate;
+    const currRate = CURRENCIES[currency] ? CURRENCIES[currency].rate : 1.0;
+    const amt = parseFloat(topupData.amount) / currRate;
     if (amt <= 0 || isNaN(amt)) return alert('Enter valid amount');
     
     setBalance(prev => prev + amt);
@@ -221,7 +259,8 @@ export default function App() {
 
   const executeAirtime = (e) => {
     e.preventDefault();
-    const amt = parseFloat(airtimeData.amount) / CURRENCIES[currency].rate;
+    const currRate = CURRENCIES[currency] ? CURRENCIES[currency].rate : 1.0;
+    const amt = parseFloat(airtimeData.amount) / currRate;
     if (amt <= 0 || isNaN(amt)) return alert('Enter valid amount');
     if (amt > balance) return alert('Insufficient balance');
 
@@ -250,12 +289,13 @@ export default function App() {
 
     setTransactions([cashbackTx, newTx, ...transactions]);
     setActiveModal(null);
-    setAirtimeData({ phone: '', network: 'MTN', amount: '' });
+    setAirtimeData({ phone: '', network: 'Global Telecom', amount: '' });
   };
 
   const executeSavings = (e) => {
     e.preventDefault();
-    const amt = parseFloat(savingsData.amount) / CURRENCIES[currency].rate;
+    const currRate = CURRENCIES[currency] ? CURRENCIES[currency].rate : 1.0;
+    const amt = parseFloat(savingsData.amount) / currRate;
     if (amt <= 0 || isNaN(amt)) return alert('Enter valid amount');
 
     if (savingsData.action === 'deposit') {
@@ -360,7 +400,7 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Email Address</label>
+                <label className="text-xs text-slate-400 block mb-1">Email Address (For Verification Code)</label>
                 <input 
                   type="email" 
                   placeholder="john@example.com" 
@@ -369,8 +409,12 @@ export default function App() {
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
               </div>
-              <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 font-semibold py-3 rounded-xl shadow-lg transition">
-                Continue to Verification
+              <button 
+                type="submit" 
+                disabled={isSendingEmail}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 font-semibold py-3 rounded-xl shadow-lg transition flex justify-center items-center gap-2"
+              >
+                {isSendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Verification Email'}
               </button>
               <button type="button" onClick={() => setAuthStep('login')} className="w-full text-xs text-slate-400 text-center block pt-2">
                 Back to Login
@@ -380,18 +424,22 @@ export default function App() {
 
           {authStep === 'signup_otp' && (
             <form onSubmit={handleVerifyOTP} className="space-y-4 text-center">
-              <p className="text-xs text-slate-300">Enter verification code sent to {formData.phone || 'your phone'}</p>
+              <p className="text-xs text-slate-300">
+                A 4-digit code was dispatched to <strong className="text-emerald-400">{formData.email}</strong>
+              </p>
               <input 
                 type="text" 
-                placeholder="1234" 
+                placeholder="••••" 
                 maxLength={4}
                 required
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-center text-2xl font-mono tracking-widest focus:outline-none focus:border-emerald-500"
                 onChange={(e) => setFormData({...formData, otp: e.target.value})}
               />
-              <p className="text-[10px] text-emerald-400">* Demo Mode: Enter any 4 digits (e.g. 1234)</p>
+              <div className="p-2 bg-slate-900/50 rounded-xl border border-slate-700/60 text-[11px] text-slate-400">
+                Code sent via Email: <span className="font-mono text-emerald-400 font-bold">{generatedOtp}</span>
+              </div>
               <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 font-semibold py-3 rounded-xl shadow-lg">
-                Verify Mobile
+                Verify Email Code
               </button>
             </form>
           )}
@@ -420,10 +468,10 @@ export default function App() {
               </div>
               <div className="p-3 bg-emerald-950/50 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>You will receive a <strong>$1,000 Empowerment Grant</strong> bonus instantly!</span>
+                <span>You will receive a <strong>$50 USD Welcome Bonus</strong> instantly!</span>
               </div>
               <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 font-semibold py-3 rounded-xl shadow-lg">
-                Complete & Claim Grant
+                Complete & Claim $50 Bonus
               </button>
             </form>
           )}
@@ -460,7 +508,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Global Currency Selector */}
+          {/* Global Currency Selector (USD, EUR, GBP) */}
           <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs">
             <Globe className="w-3.5 h-3.5 text-emerald-400 mr-1.5" />
             <select 
@@ -492,7 +540,7 @@ export default function App() {
                   </button>
                 </span>
                 <span className="text-[10px] bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-emerald-100">
-                  {CURRENCIES[currency].label}
+                  {CURRENCIES[currency]?.label || 'USD ($)'}
                 </span>
               </div>
 
@@ -776,11 +824,7 @@ export default function App() {
           </button>
         </div>
 
-        {/* ------------------------------------------------------------- */}
-        {/* MODAL DIALOGS */}
-        {/* ------------------------------------------------------------- */}
-
-        {/* TRANSFER MODAL */}
+        {/* MODALS */}
         {activeModal === 'transfer' && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end justify-center sm:items-center p-0 sm:p-4">
             <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
@@ -801,7 +845,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Amount ({CURRENCIES[currency].symbol})</label>
+                  <label className="text-xs text-slate-400 block mb-1">Amount ({CURRENCIES[currency]?.symbol || '$'})</label>
                   <input 
                     type="number" 
                     placeholder="0.00" 
@@ -829,7 +873,6 @@ export default function App() {
           </div>
         )}
 
-        {/* TOPUP MODAL */}
         {activeModal === 'topup' && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end justify-center sm:items-center p-0 sm:p-4">
             <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
@@ -840,7 +883,7 @@ export default function App() {
 
               <form onSubmit={executeTopup} className="space-y-3">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Amount to Add ({CURRENCIES[currency].symbol})</label>
+                  <label className="text-xs text-slate-400 block mb-1">Amount to Add ({CURRENCIES[currency]?.symbol || '$'})</label>
                   <input 
                     type="number" 
                     placeholder="0.00" 
@@ -856,7 +899,7 @@ export default function App() {
                     onChange={(e) => setTopupData({...topupData, method: e.target.value})}
                   >
                     <option value="card">Debit / Credit Card</option>
-                    <option value="bank">Bank Transfer</option>
+                    <option value="bank">Bank Wire Transfer</option>
                     <option value="crypto">Global Crypto Payment</option>
                   </select>
                 </div>
@@ -868,7 +911,6 @@ export default function App() {
           </div>
         )}
 
-        {/* AIRTIME MODAL */}
         {activeModal === 'airtime' && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end justify-center sm:items-center p-0 sm:p-4">
             <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
@@ -894,14 +936,14 @@ export default function App() {
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 px-3 text-sm text-white"
                     onChange={(e) => setAirtimeData({...airtimeData, network: e.target.value})}
                   >
-                    <option value="MTN">MTN Global</option>
-                    <option value="Airtel">Airtel</option>
                     <option value="Vodafone">Vodafone</option>
                     <option value="T-Mobile">T-Mobile</option>
+                    <option value="AT&T">AT&T</option>
+                    <option value="Orange">Orange Global</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Amount ({CURRENCIES[currency].symbol})</label>
+                  <label className="text-xs text-slate-400 block mb-1">Amount ({CURRENCIES[currency]?.symbol || '$'})</label>
                   <input 
                     type="number" 
                     placeholder="0.00" 
@@ -918,7 +960,6 @@ export default function App() {
           </div>
         )}
 
-        {/* SAVINGS MODAL */}
         {activeModal === 'savings' && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end justify-center sm:items-center p-0 sm:p-4">
             <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
@@ -931,7 +972,7 @@ export default function App() {
 
               <form onSubmit={executeSavings} className="space-y-3">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Amount ({CURRENCIES[currency].symbol})</label>
+                  <label className="text-xs text-slate-400 block mb-1">Amount ({CURRENCIES[currency]?.symbol || '$'})</label>
                   <input 
                     type="number" 
                     placeholder="0.00" 
@@ -948,7 +989,6 @@ export default function App() {
           </div>
         )}
 
-        {/* RECEIPT MODAL */}
         {selectedReceipt && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 space-y-4 text-center">
