@@ -108,23 +108,37 @@ export default function App() {
     return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // Auth Handlers
+  // Auth Handlers (Strictly checks registered users registry)
   const handleLogin = (e) => {
     e.preventDefault();
     if (!formData.phone || !formData.password) return alert('Please enter phone/email and password');
-    const existingUser = {
-      fullName: formData.fullName || 'Empowered Member',
-      phone: formData.phone,
-      accountNo: '30' + formData.phone.slice(-8),
-      email: formData.email || 'user@reliance.org',
-      tier: 'Tier 3 (Global Verified)'
-    };
-    setUser(existingUser);
+
+    // Retrieve registered accounts database from localStorage
+    const registeredUsers = JSON.parse(localStorage.getItem('reliance_registered_users') || '[]');
+    
+    // Find matching registered account by phone or email
+    const foundUser = registeredUsers.find(
+      u => u.phone === formData.phone || u.email === formData.phone
+    );
+
+    if (!foundUser) {
+      return alert('Account not found! Please register an account first before signing in.');
+    }
+
+    setUser(foundUser);
   };
 
   const handleSignupDetails = (e) => {
     e.preventDefault();
     if (!formData.fullName || !formData.phone || !formData.email) return alert('Please fill in all details');
+    
+    // Check if phone or email already exists
+    const registeredUsers = JSON.parse(localStorage.getItem('reliance_registered_users') || '[]');
+    const exists = registeredUsers.some(u => u.phone === formData.phone || u.email === formData.email);
+    if (exists) {
+      return alert('An account with this phone or email already exists. Please log in instead.');
+    }
+
     setAuthStep('signup_otp');
   };
 
@@ -137,6 +151,7 @@ export default function App() {
   const handleCompleteRegistration = (e) => {
     e.preventDefault();
     if (formData.pin.length !== 4) return alert('PIN must be 4 digits');
+    
     const newUser = {
       fullName: formData.fullName,
       phone: formData.phone,
@@ -144,6 +159,12 @@ export default function App() {
       accountNo: '30' + formData.phone.slice(-8),
       tier: 'Tier 3 (Global Verified)'
     };
+
+    // Save into registered users database
+    const registeredUsers = JSON.parse(localStorage.getItem('reliance_registered_users') || '[]');
+    registeredUsers.push(newUser);
+    localStorage.setItem('reliance_registered_users', JSON.stringify(registeredUsers));
+
     setUser(newUser);
     setBalance(1000.00); // Starter Empowerment Grant
   };
@@ -279,7 +300,7 @@ export default function App() {
           {authStep === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Phone Number or Email</label>
+                <label className="text-xs text-slate-400 block mb-1">Registered Phone Number or Email</label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
                   <input 
