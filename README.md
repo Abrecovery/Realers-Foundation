@@ -1,28 +1,17 @@
-# NovaBank — Digital Bank App
+# Reliance Foundation Digital Wallet 🌍💳
 
-A full-stack digital banking demo with **Node.js + Express** backend and a modern frontend.
+A modern, global, multi-currency mobile digital wallet web application inspired by OPay, built with React and Tailwind CSS.
 
-## Features
+## Features ✨
+* **Global Multi-Currency Support**: Switch seamlessly between USD ($), EUR (€), GBP (£), and NGN (₦) with live conversion rates.
+* **Seamless Registration & Security**: Multi-step onboarding with phone/email verification simulation and 4-digit PIN setup.
+* **Instant Peer-to-Peer Transfers**: Transfer funds worldwide to other Reliance Foundation accounts or traditional banks.
+* **Airtime & Utility Purchases**: Instant airtime and data top-ups with 3% cashback rewards.
+* **Reliance Save (O-Wealth)**: Interactive high-yield savings engine with daily auto-compounding interest.
+* **Detailed Receipts & History**: Filterable ledger with downloadable transaction receipts.
 
-- User registration & login (JWT authentication)
-- Account balance view
-- Money transfers between users
-- Demo deposit (add funds)
-- Transaction history
-- Clean, responsive dark UI
-
-## Demo Accounts
-
-| Email            | Password     | Starting Balance |
-|------------------|--------------|------------------|
-| alice@demo.com   | password123  | ~$2,500          |
-| bob@demo.com     | password123  | ~$1,800          |
-
-## How to Run
-
-### 1. Backend
-
-```bash
-cd server
-npm install
-npm start
+## Tech Stack 🛠️
+* **Frontend**: React 18
+* **Styling**: Tailwind CSS
+* **Icons**: Lucide React
+* **Build Tool**: Vite
