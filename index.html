@@ -2,13 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=64&h=64&fit=crop" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reliance Foundation Digital Wallet</title>
-    <!-- Tailwind CSS CDN for instant styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Force Netlify Badge Hidden Behind / Off Screen -->
+    <style>
+      #netlify-deploy-badge, .netlify-badge {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        z-index: -9999 !important;
+        pointer-events: none !important;
+      }
+    </style>
   </head>
-  <body class="bg-gray-100 text-gray-800 antialiased">
+  <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
